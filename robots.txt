@@ -1,0 +1,6 @@
+# robots.txt for https://master-film.pages.dev/
+
+User-agent: *
+Allow: /
+
+Sitemap: https://master-film.pages.dev/sitemap.xml
