@@ -622,9 +622,11 @@
     </footer>
 
     <script type="module">
-        // TMDB API Key
-        const TMDB_API_KEY = '92d8deed10d8735da58f6777deee8a74';
-        const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+        // Perubahan: Baris definisi TMDB_API_KEY yang sebelumnya dikomentari, kini telah dihapus sepenuhnya.
+        // Kunci API ini sekarang diamankan di Cloudflare Worker dan tidak diperlukan di sini.
+        
+        // Mengubah TMDB_BASE_URL agar menunjuk ke URL Cloudflare Worker Anda.
+        const TMDB_BASE_URL = 'https://tmdb-api-proxy.musadekakhmad.workers.dev'; // Ganti dengan URL Worker Anda yang sebenarnya
         const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
         const TMDB_PROFILE_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w185';
 
@@ -891,7 +893,6 @@
 
             spinnerElement.classList.remove('hidden');
             if (page === 1) { // Only clear grid on first page load for a section
-                console.log(`[DEBUG] Clearing grid for section: ${sectionName}`); // Debug log
                 gridElement.innerHTML = '';
             }
             noResultsMsg.classList.add('hidden');
@@ -901,29 +902,26 @@
             let titleText = '';
 
             if (query) {
-                url = `${TMDB_BASE_URL}${mediaTypeEndpoints[type].search}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&language=en`;
+                url = `${TMDB_BASE_URL}${mediaTypeEndpoints[type].search}?query=${encodeURIComponent(query)}&page=${page}&language=en`;
                 titleText = `Search Results for "${query}"`; // Specific title for search
             } else if (genreId) {
-                url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.genre}?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}&language=en`;
+                url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.genre}?with_genres=${genreId}&page=${page}&language=en`;
                 titleText = TEXT_CONSTANTS.romanceMovies; // Specific for Romance section
             } else {
                 if (sectionName === 'now-playing' && type === 'movie') {
-                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.now_playing}?api_key=${TMDB_API_KEY}&page=${page}&language=en`;
+                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.now_playing}?page=${page}&language=en`;
                     titleText = TEXT_CONSTANTS.nowPlayingMovies;
                 } else if (sectionName === 'top-rated' && type === 'movie') {
-                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.top_rated}?api_key=${TMDB_API_KEY}&page=${page}&language=en`;
+                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.top_rated}?page=${page}&language=en`;
                     titleText = TEXT_CONSTANTS.topRatedMovies;
                 } else if (sectionName === 'romance-movies' && type === 'movie') {
-                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.genre}?api_key=${TMDB_API_KEY}&with_genres=${fixedMovieGenres.Romance}&page=${page}&language=en`;
+                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.movie.genre}?with_genres=${fixedMovieGenres.Romance}&page=${page}&language=en`;
                     titleText = TEXT_CONSTANTS.romanceMovies;
                 } else if (type === 'tv' && sectionName === 'now-playing') { // Using now-playing section for TV series
-                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.tv.popular}?api_key=${TMDB_API_KEY}&page=${page}&language=en`;
+                    url = `${TMDB_BASE_URL}${mediaTypeEndpoints.tv.popular}?page=${page}&language=en`;
                     titleText = TEXT_CONSTANTS.popularTvSeries;
                 }
             }
-
-            console.log(`[DEBUG] loadMediaSection called for section: ${sectionName}, requested page: ${page}`); // Debug log
-            console.log(`[DEBUG] API URL for ${sectionName} (page ${page}): ${url}`); // Debug log
 
             try {
                 const response = await fetch(url);
@@ -931,7 +929,6 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log(`[DEBUG] Received ${data.results.length} items for ${sectionName} (page ${data.page}). First item: ${data.results[0] ? (data.results[0].title || data.results[0].name) : 'N/A'}`); // Debug log
 
                 if (data.results.length === 0 && page === 1) {
                     noResultsMsg.classList.remove('hidden');
@@ -957,7 +954,6 @@
                             </div>
                         `;
                         gridElement.appendChild(mediaCard);
-                        console.log(`[DEBUG] Added media ID: ${media.id}, Title: ${titleOrName} to section: ${sectionName}, page: ${data.page}`); // Debug log
 
                         mediaCard.addEventListener('click', () => {
                             // Adsterra Direct Ad Logic: Open ad on first click for this mediaId
@@ -997,8 +993,7 @@
             loadingSpinnerLayer2.classList.remove('hidden');
 
             try {
-                // Fetch media details
-                const detailResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].detail}${mediaId}?api_key=${TMDB_API_KEY}&language=en`);
+                const detailResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].detail}${mediaId}?language=en`);
                 if (!detailResponse.ok) throw new Error(`HTTP error! status: ${detailResponse.status}`);
                 const media = await detailResponse.json();
 
@@ -1008,8 +1003,7 @@
                     window.location.hash = `#/media/${mediaType}/${media.id}/${mediaSlug}`;
                 }
 
-                // Fetch media videos (for trailer)
-                const videoResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].videos}${mediaId}/videos?api_key=${TMDB_API_KEY}&language=en`);
+                const videoResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].videos}${mediaId}/videos?language=en`);
                 if (!videoResponse.ok) throw new Error(`HTTP error! status: ${videoResponse.status}`);
                 const videosData = await videoResponse.json();
 
@@ -1023,8 +1017,7 @@
                 // Using a relevant movie trailer compilation as fallback if no specific trailer is found
                 const trailerUrl = trailer ? `https://www.youtube.com/embed/${trailer.key}` : 'https://www.youtube.com/embed/DmwYqQki_Ic'; // Changed fallback URL
 
-                // Fetch media credits (for cast and director)
-                const creditsResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].credits}${mediaId}/credits?api_key=${TMDB_API_KEY}&language=en`);
+                const creditsResponse = await fetch(`${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].credits}${mediaId}/credits?language=en`);
                 if (!creditsResponse.ok) throw new Error(`HTTP error! status: ${creditsResponse.status}`);
                 const creditsData = await creditsResponse.json();
                 
@@ -1035,7 +1028,7 @@
                 // Fetch content rating
                 let contentRating = TEXT_CONSTANTS.notAvailable;
                 if (mediaType === 'movie') {
-                    const releaseDatesResponse = await fetch(`${TMDB_BASE_URL}/movie/${mediaId}/release_dates?api_key=${TMDB_API_KEY}`);
+                    const releaseDatesResponse = await fetch(`${TMDB_BASE_URL}/movie/${mediaId}/release_dates`);
                     if (releaseDatesResponse.ok) {
                         const releaseDatesData = await releaseDatesResponse.json();
                         const usRelease = releaseDatesData.results.find(res => res.iso_3166_1 === 'US');
@@ -1044,7 +1037,7 @@
                         }
                     }
                 } else if (mediaType === 'tv') {
-                    const contentRatingsResponse = await fetch(`${TMDB_BASE_URL}/tv/${mediaId}/content_ratings?api_key=${TMDB_API_KEY}`);
+                    const contentRatingsResponse = await fetch(`${TMDB_BASE_URL}/tv/${mediaId}/content_ratings`);
                     if (contentRatingsResponse.ok) {
                         const contentRatingsData = await contentRatingsResponse.json();
                         const usRating = contentRatingsData.results.find(res => res.iso_3166_1 === 'US');
@@ -1132,7 +1125,7 @@
             noSimilarResultsMessage.classList.add('hidden');
 
             try {
-                const similarUrl = `${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].similar}${mediaId}/similar?api_key=${TMDB_API_KEY}&language=en&page=1`;
+                const similarUrl = `${TMDB_BASE_URL}${mediaTypeEndpoints[mediaType].similar}${mediaId}/similar?language=en&page=1`;
                 const response = await fetch(similarUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1274,7 +1267,6 @@
                     if ((type === 'movie' || type === 'tv') && !isNaN(id)) {
                         // Prevent redundant calls if already on the same detail page
                         if (currentMediaId === id && currentMediaType === type && layer2.style.display === 'block') {
-                            console.log("[DEBUG] Already on this detail page, preventing redundant load.");
                             return;
                         }
                         currentMediaId = id;
@@ -1286,19 +1278,16 @@
                         await fetchAndDisplayMediaDetail(id, type);
                     } else {
                         // Invalid hash, revert to home
-                        console.log("[DEBUG] Invalid media hash, loading all sections."); // Debug log
                         loadAllSections(); // Reload all sections
                         showLayer(layer1);
                         window.location.hash = ''; // Clear hash
                     }
                 }
             } else if (hash === '#/movies') {
-                console.log("[DEBUG] Handling #/movies hash."); // Debug log
                 currentMediaType = 'movie';
                 loadAllSections(); // This will reset page counters and load movie sections
                 showLayer(layer1);
             } else if (hash === '#/tv') {
-                console.log("[DEBUG] Handling #/tv hash."); // Debug log
                 currentMediaType = 'tv';
                 // Hide all movie sections and genre buttons
                 document.getElementById('romance-movies-section').style.display = 'none';
@@ -1311,13 +1300,11 @@
                 document.getElementById('section-title-now-playing').textContent = TEXT_CONSTANTS.popularTvSeries; // Update title
                 showLayer(layer1);
             } else if (hash === '#/home-seo') { // New hash for Layer 4
-                console.log("[DEBUG] Handling #/home-seo hash.");
                 showLayer(layer4);
                 loadSeoContent(); // Call loadSeoContent when navigating to Layer 4
             }
             else {
                 // Default: empty hash or unrecognized hash, load movies home
-                console.log("[DEBUG] Handling empty or unrecognized hash, loading all sections (default)."); // Debug log
                 currentMediaType = 'movie'; // Default to movies
                 loadAllSections();
                 showLayer(layer1);
@@ -1326,7 +1313,6 @@
 
         // Function to load all sections on Layer 1
         function loadAllSections() {
-            console.log("[DEBUG] loadAllSections called."); // Debug log
             // Reset page counters for all sections
             for (const key in pageCounters) {
                 pageCounters[key] = 1; // Ensure they are reset to 1
@@ -1347,28 +1333,22 @@
 
         // Event Listeners for Load More Buttons
         document.getElementById('load-more-romance-movies').addEventListener('click', () => {
-            console.log("[DEBUG] Load More Romance Movies clicked."); // Debug log
             loadMediaSection('movie', 'romance-movies', pageCounters['romance-movies'] + 1, '', fixedMovieGenres.Romance);
         });
         document.getElementById('load-more-now-playing').addEventListener('click', () => {
-            console.log("[DEBUG] Load More Now Playing clicked."); // Debug log
             loadMediaSection('movie', 'now-playing', pageCounters['now-playing'] + 1);
         });
         document.getElementById('load-more-top-rated').addEventListener('click', () => {
-            console.log("[DEBUG] Load More Top Rated clicked."); // Debug log
             loadMediaSection('movie', 'top-rated', pageCounters['top-rated'] + 1);
         });
 
 
         backToListButton.addEventListener('click', () => {
-            console.log("[DEBUG] Back to list button clicked."); // Debug log
             showLayer(layer1);
             window.location.hash = ''; // Clear hash when going back to list
-            // loadAllSections(); // This will be called by handleHashChange due to hash change
         });
 
         backToDetailButton.addEventListener('click', () => {
-            console.log("[DEBUG] Back to detail button clicked."); // Debug log
             showLayer(layer2);
             // Stop streaming when going back to details
             document.getElementById('streaming-player').src = '';
@@ -1377,7 +1357,6 @@
         });
 
         backFromSeoButton.addEventListener('click', () => { // New event listener for Layer 4 back button
-            console.log("[DEBUG] Back from SEO button clicked.");
             showLayer(layer1);
             window.location.hash = ''; // Clear hash when going back to list
         });
@@ -1464,12 +1443,10 @@
                 return; // Stop here for the first click (ad only)
             }
             // Subsequent clicks: navigate to Layer 4 (SEO content)
-            console.log("[DEBUG] Navigating to Home/SEO via nav-home-button (subsequent click).");
             window.location.hash = '#/home-seo'; // This will trigger handleHashChange to load Layer 4
         });
 
         navMoviesButton.addEventListener('click', () => {
-            console.log("[DEBUG] Navigating to Movies home via hash change.");
             currentSearchQuery = ''; // Clear search
             searchInput.value = ''; // Clear search input
             currentGenreId = null; // Clear genre filter
@@ -1477,7 +1454,6 @@
         });
 
         navTvSeriesButton.addEventListener('click', () => {
-            console.log("[DEBUG] Navigating to TV Series home via hash change.");
             currentSearchQuery = ''; // Clear search
             searchInput.value = ''; // Clear search input
             currentGenreId = null; // Clear genre filter
@@ -1606,7 +1582,6 @@
                         return; // Stop here for the first click (ad only)
                     }
                     // Subsequent clicks: navigate to Layer 1 (movies home)
-                    console.log("[DEBUG] Navigating to Home/Movies via Layer 4 image (subsequent click).");
                     window.location.hash = '#/movies'; // This will trigger handleHashChange to load movies
                 });
             }
